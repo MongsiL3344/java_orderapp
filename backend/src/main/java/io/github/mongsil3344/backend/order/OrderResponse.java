@@ -6,7 +6,8 @@ public record OrderResponse(
         Long id,
         String customerName,
         int totalPrice,
-        Instant createdAt
+        Instant createdAt,
+        String orderJson
 ) {
 
     public static OrderResponse from(Order order) {
@@ -14,7 +15,8 @@ public record OrderResponse(
                 order.getId(),
                 order.getCustomerName(),
                 order.getTotalPrice(),
-                order.getCreatedAt()
+                order.getCreatedAt(),
+                order.getOrderJson()
         );
     }
 }

@@ -62,6 +62,7 @@ public class OrderFrame extends JFrame {
     private final JTextField apiUrlField = new JTextField(DEFAULT_API_URL);
     private final JLabel totalPriceLabel = new JLabel("총 결제 금액: 0원");
     private final JLabel statusLabel = new JLabel("백엔드를 실행한 뒤 주문을 전송하세요.");
+    private final JButton homeButton = new JButton("처음으로");
     private final JButton addButton = new JButton("담기");
     private final JButton reloadMenuButton = new JButton("새로고침");
     private final JButton increaseButton = new JButton("+");
@@ -79,15 +80,22 @@ public class OrderFrame extends JFrame {
         setLayout(new BorderLayout(16, 16));
         getRootPane().setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
 
+        add(createTopPanel(), BorderLayout.NORTH);
         add(createMenuPanel(), BorderLayout.WEST);
         add(createOrderPanel(), BorderLayout.CENTER);
-        add(createStatusPanel(), BorderLayout.SOUTH);
 
         bindActions();
         updateTotalPrice();
         pack();
         setLocationRelativeTo(null);
         loadMenusFromBackend();
+    }
+
+    private JPanel createTopPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        homeButton.setPreferredSize(new Dimension(104, 34));
+        panel.add(homeButton, BorderLayout.WEST);
+        return panel;
     }
 
     private JPanel createMenuPanel() {
@@ -184,13 +192,6 @@ public class OrderFrame extends JFrame {
         return panel;
     }
 
-    private JPanel createStatusPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        statusLabel.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
-        panel.add(statusLabel, BorderLayout.WEST);
-        return panel;
-    }
-
     private void configureCartTableColumns() {
         DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer() {
             @Override
@@ -218,6 +219,7 @@ public class OrderFrame extends JFrame {
     }
 
     private void bindActions() {
+        homeButton.addActionListener(event -> returnToRoleSelection());
         addButton.addActionListener(event -> addSelectedMenuToCart());
         reloadMenuButton.addActionListener(event -> loadMenusFromBackend());
         increaseButton.addActionListener(event -> changeSelectedCartQuantity(1));
@@ -225,6 +227,12 @@ public class OrderFrame extends JFrame {
         removeButton.addActionListener(event -> removeSelectedCartItem());
         clearButton.addActionListener(event -> clearCart());
         orderButton.addActionListener(event -> submitOrder());
+    }
+
+    private void returnToRoleSelection() {
+        RoleSelectionFrame roleSelectionFrame = new RoleSelectionFrame();
+        roleSelectionFrame.setVisible(true);
+        dispose();
     }
 
     private void addSelectedMenuToCart() {
@@ -387,12 +395,14 @@ public class OrderFrame extends JFrame {
         }
 
         if (response.isSuccess()) {
-            String orderedJson = response.requestBody();
+            int totalPrice = calculateTotalPrice();
+            String orderSummary = formatOrderSummary();
             cartItems.clear();
             refreshCart();
             statusLabel.setText("주문이 백엔드로 전송되었습니다. 응답 코드: " + response.statusCode());
             showMessage(
-                    "주문이 완료되었습니다.\n\n전송한 JSON:\n" + orderedJson,
+                    "주문이 완료되었습니다.\n\n주문 내역\n" + orderSummary
+                            + "\n\n총 결제 금액: " + currencyFormat.format(totalPrice),
                     "주문 완료",
                     JOptionPane.INFORMATION_MESSAGE
             );
@@ -451,6 +461,20 @@ public class OrderFrame extends JFrame {
         return cartItems.stream()
                 .mapToInt(CartItem::lineTotal)
                 .sum();
+    }
+
+    private String formatOrderSummary() {
+        StringBuilder summary = new StringBuilder();
+        for (CartItem item : cartItems) {
+            if (summary.length() > 0) {
+                summary.append("\n");
+            }
+            summary.append(item.menuItem().name())
+                    .append(": ")
+                    .append(item.quantity())
+                    .append("개");
+        }
+        return summary.toString();
     }
 
     private void showMessage(String message, String title, int messageType) {

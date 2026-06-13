@@ -1,6 +1,7 @@
 package io.github.mongsil3344.orderapp.client.ui;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mongsil3344.orderapp.client.api.MenuApiClient;
 import io.github.mongsil3344.orderapp.client.api.OrderApiClient;
 import io.github.mongsil3344.orderapp.client.model.MenuItem;
@@ -57,6 +58,7 @@ public class OwnerFrame extends JFrame {
 
     private final JTextField apiUrlField = new JTextField(DEFAULT_API_URL);
     private final JLabel statusLabel = new JLabel("백엔드를 실행한 뒤 데이터를 새로고침하세요.");
+    private final JButton homeButton = new JButton("처음으로");
 
     private final MenuTableModel menuTableModel = new MenuTableModel();
     private final JTable menuTable = new JTable(menuTableModel);
@@ -82,7 +84,6 @@ public class OwnerFrame extends JFrame {
 
         add(createServerPanel(), BorderLayout.NORTH);
         add(createTabbedPane(), BorderLayout.CENTER);
-        add(createStatusPanel(), BorderLayout.SOUTH);
 
         bindActions();
         pack();
@@ -93,10 +94,15 @@ public class OwnerFrame extends JFrame {
 
     private JPanel createServerPanel() {
         JPanel panel = new JPanel(new BorderLayout(8, 0));
+        homeButton.setPreferredSize(new Dimension(104, 34));
+        panel.add(homeButton, BorderLayout.WEST);
+
+        JPanel serverUrlPanel = new JPanel(new BorderLayout(8, 0));
         JLabel label = new JLabel("서버 URL");
         label.setFont(label.getFont().deriveFont(Font.BOLD));
-        panel.add(label, BorderLayout.WEST);
-        panel.add(apiUrlField, BorderLayout.CENTER);
+        serverUrlPanel.add(label, BorderLayout.WEST);
+        serverUrlPanel.add(apiUrlField, BorderLayout.CENTER);
+        panel.add(serverUrlPanel, BorderLayout.CENTER);
 
         reloadAllButton.setPreferredSize(new Dimension(128, 34));
         panel.add(reloadAllButton, BorderLayout.EAST);
@@ -165,13 +171,6 @@ public class OwnerFrame extends JFrame {
         return panel;
     }
 
-    private JPanel createStatusPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        statusLabel.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
-        panel.add(statusLabel, BorderLayout.WEST);
-        return panel;
-    }
-
     private void configureMenuTableColumns() {
         DefaultTableCellRenderer rightRenderer = createCurrencyRenderer();
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
@@ -216,6 +215,7 @@ public class OwnerFrame extends JFrame {
     }
 
     private void bindActions() {
+        homeButton.addActionListener(event -> returnToRoleSelection());
         reloadAllButton.addActionListener(event -> {
             loadMenusFromBackend();
             loadOrdersFromBackend();
@@ -230,6 +230,12 @@ public class OwnerFrame extends JFrame {
                 showSelectedOrderDetails();
             }
         });
+    }
+
+    private void returnToRoleSelection() {
+        RoleSelectionFrame roleSelectionFrame = new RoleSelectionFrame();
+        roleSelectionFrame.setVisible(true);
+        dispose();
     }
 
     private void loadMenusFromBackend() {
@@ -514,20 +520,25 @@ public class OwnerFrame extends JFrame {
     }
 
     private String formatOrderDetails(OrderHistoryItem order) {
+        JsonNode orderJson = readOrderJson(order.orderJson());
         return """
                 주문번호: %s
                 주문자: %s
+                전화번호: %s
+                주소: %s
                 총액: %s
                 접수시각: %s
 
-                주문 내용
+                주문 메뉴
                 %s
                 """.formatted(
                 order.id(),
-                order.customerName(),
+                getText(orderJson, "customerName", order.customerName()),
+                getText(orderJson, "phoneNumber", "-"),
+                getText(orderJson, "address", "-"),
                 currencyFormat.format(order.totalPrice()),
                 formatCreatedAt(order.createdAt()),
-                prettyPrintOrderJson(order.orderJson())
+                formatOrderItems(orderJson)
         );
     }
 
@@ -543,17 +554,43 @@ public class OwnerFrame extends JFrame {
         }
     }
 
-    private String prettyPrintOrderJson(String orderJson) {
+    private JsonNode readOrderJson(String orderJson) {
         if (orderJson == null || orderJson.isBlank()) {
-            return "";
+            return null;
         }
 
         try {
-            return objectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(objectMapper.readTree(orderJson));
+            return objectMapper.readTree(orderJson);
         } catch (IOException exception) {
-            return orderJson;
+            return null;
         }
+    }
+
+    private String getText(JsonNode node, String fieldName, String fallback) {
+        if (node == null) {
+            return fallback;
+        }
+
+        String value = node.path(fieldName).asText("");
+        return value.isBlank() ? fallback : value;
+    }
+
+    private String formatOrderItems(JsonNode orderJson) {
+        if (orderJson == null || !orderJson.path("items").isArray() || orderJson.path("items").isEmpty()) {
+            return "주문 메뉴 정보가 없습니다.";
+        }
+
+        StringBuilder summary = new StringBuilder();
+        for (JsonNode itemNode : orderJson.path("items")) {
+            if (summary.length() > 0) {
+                summary.append("\n");
+            }
+            summary.append(getText(itemNode, "menuName", "이름 없는 메뉴"))
+                    .append(": ")
+                    .append(itemNode.path("quantity").asInt(0))
+                    .append("개");
+        }
+        return summary.toString();
     }
 
     private void setMenuLoadingState(boolean loading) {
