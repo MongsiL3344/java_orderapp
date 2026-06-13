@@ -17,17 +17,6 @@ public class MenuRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public int count() {
-        Integer count = jdbcTemplate.queryForObject("select count(*) from menus", Integer.class);
-        return count == null ? 0 : count;
-    }
-
-    public void saveAll(List<Menu> menus) {
-        for (Menu menu : menus) {
-            save(menu);
-        }
-    }
-
     public Menu save(Menu menu) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
