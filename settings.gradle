@@ -1,0 +1,4 @@
+rootProject.name = 'orderapp'
+
+include 'backend'
+include 'swing-client'

@@ -1,0 +1,18 @@
+.DS_Store
+
+### Gradle ###
+.gradle/
+**/.gradle/
+build/
+**/build/
+
+### IDE ###
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+**/out/
+
+### Runtime data ###
+backend/data/
