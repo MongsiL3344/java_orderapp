@@ -11,8 +11,11 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 
+// 손님, 사장님 역할을 선택하는 첫 화면 클래스
 public class RoleSelectionFrame extends JFrame {
 
+    // 생성자
+    // 역할 선택 화면에 필요한 컴포넌트들을 생성하고 배치함
     public RoleSelectionFrame() {
         setTitle("배달 주문 앱");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -46,6 +49,7 @@ public class RoleSelectionFrame extends JFrame {
         setLocationRelativeTo(null);
     }
 
+    // 선택한 화면을 열고 현재 역할 선택 화면은 닫는 메서드
     private void openFrame(JFrame frame) {
         frame.setVisible(true);
         dispose();

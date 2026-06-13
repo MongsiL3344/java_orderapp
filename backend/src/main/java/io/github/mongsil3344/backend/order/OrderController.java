@@ -9,43 +9,33 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 
-import java.time.Instant;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
 
-    private final OrderRepository orderRepository;
-    private final ObjectMapper objectMapper;
+    // 서비스 레이어 빈 주입
+    private final OrderService orderService;
 
-    public OrderController(OrderRepository orderRepository, ObjectMapper objectMapper) {
-        this.orderRepository = orderRepository;
-        this.objectMapper = objectMapper;
+    // 서비스 레이어 객체 주입
+    public OrderController(OrderService orderService) {
+        this.orderService = orderService;
     }
 
+    // OrderResponse 객체를 반환하는 createOrder 메서드
+    // menu와 마찬가지로 Http요청 바디에 있는 바디를 읽기 위해 어노테이션 사용
+    // JacksonException을 던질 수 있음을 명시해서 컴파일러 경고를 제거 (try catch로 처리하지 않고 스프링이 잡아서 처리하도록 함)
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public OrderResponse createOrder(@RequestBody JsonNode orderJson) throws JacksonException {
-        String customerName = orderJson.path("customerName").asString("이름 없음");
-        int totalPrice = orderJson.path("totalPrice").intValue(0);
-        Order order = new Order(
-                customerName,
-                totalPrice,
-                Instant.now(),
-                objectMapper.writeValueAsString(orderJson)
-        );
-
-        return OrderResponse.from(orderRepository.save(order));
+        return orderService.createOrder(orderJson);
     }
 
+    // OrderResponse 형 List 자료구조를 반환하는 getOrders 메서드
     @GetMapping
     public List<OrderResponse> getOrders() {
-        return orderRepository.findAllByOrderByIdDesc()
-                .stream()
-                .map(OrderResponse::from)
-                .toList();
+        return orderService.getOrders();
     }
 }

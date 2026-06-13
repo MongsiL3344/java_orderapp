@@ -2,8 +2,10 @@ package io.github.mongsil3344.backend.order;
 
 import java.time.Instant;
 
+// Order 객체 엔티티
 public class Order {
 
+    // Field
     private final Long id;
 
     private final String customerName;
@@ -14,10 +16,12 @@ public class Order {
 
     private final String orderJson;
 
+    // Id가 없을 경우의 생성자
     public Order(String customerName, int totalPrice, Instant createdAt, String orderJson) {
         this(null, customerName, totalPrice, createdAt, orderJson);
     }
 
+    // AllArgsConstructor
     public Order(Long id, String customerName, int totalPrice, Instant createdAt, String orderJson) {
         this.id = id;
         this.customerName = customerName;
@@ -26,6 +30,7 @@ public class Order {
         this.orderJson = orderJson;
     }
 
+    // Getter
     public Long getId() {
         return id;
     }

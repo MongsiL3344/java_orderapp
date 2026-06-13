@@ -1,7 +1,9 @@
 package io.github.mongsil3344.backend.menu;
 
+// 메뉴 객체 엔티티
 public class Menu {
 
+    // field
     private final Long id;
 
     private final String name;
@@ -10,10 +12,12 @@ public class Menu {
 
     private final String description;
 
+    // id가 없을 경우의 constructor
     public Menu(String name, int price, String description) {
         this(null, name, price, description);
     }
 
+    // AllArgsConstructor
     public Menu(Long id, String name, int price, String description) {
         this.id = id;
         this.name = name;
@@ -21,6 +25,7 @@ public class Menu {
         this.description = description;
     }
 
+    // Getter 메서드
     public Long getId() {
         return id;
     }

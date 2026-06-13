@@ -45,22 +45,28 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
+// 사장님이 메뉴를 관리하고 주문 내역을 확인하는 매장관리창 클래스
 public class OwnerFrame extends JFrame {
 
+    // 기본 API 서버 주소
     private static final String DEFAULT_API_URL = "http://localhost:8080";
+    // 서버에서 받은 시간을 한국시간 문자열로 바꾸기 위한 포매터
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter
             .ofPattern("yyyy-MM-dd HH:mm:ss", Locale.KOREA)
             .withZone(ZoneId.of("Asia/Seoul"));
 
+    // 금액 표시, JSON 처리, API 통신에 필요한 객체
     private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(Locale.KOREA);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final MenuApiClient menuApiClient = new MenuApiClient();
     private final OrderApiClient orderApiClient = new OrderApiClient();
 
+    // 서버 URL 입력과 화면 상태 표시를 위한 객체
     private final JTextField apiUrlField = new JTextField(DEFAULT_API_URL);
     private final JLabel statusLabel = new JLabel("백엔드를 실행한 뒤 데이터를 새로고침하세요.");
     private final JButton homeButton = new JButton("처음으로");
 
+    // 메뉴 관리 탭에서 사용하는 테이블과 버튼 객체
     private final MenuTableModel menuTableModel = new MenuTableModel();
     private final JTable menuTable = new EmptyMessageTable(menuTableModel);
     private final JButton reloadMenuButton = new JButton("새로고침");
@@ -68,12 +74,15 @@ public class OwnerFrame extends JFrame {
     private final JButton editMenuButton = new JButton("수정");
     private final JButton deleteMenuButton = new JButton("삭제");
 
+    // 주문 내역 탭에서 사용하는 테이블과 상세 영역, 버튼 객체
     private final OrderHistoryTableModel orderHistoryTableModel = new OrderHistoryTableModel();
     private final JTable orderTable = new JTable(orderHistoryTableModel);
     private final JTextArea orderDetailArea = new JTextArea();
     private final JButton reloadOrdersButton = new JButton("새로고침");
     private final JButton reloadAllButton = new JButton("전체 새로고침");
 
+    // 생성자
+    // 매장관리창 화면을 만들고 메뉴와 주문 내역을 처음 한번 불러옴
     public OwnerFrame() {
         setTitle("매장 관리");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -93,6 +102,7 @@ public class OwnerFrame extends JFrame {
         loadOrdersFromBackend();
     }
 
+    // 서버 URL 입력 영역과 전체 새로고침 버튼을 포함한 상단 패널 생성 메서드
     private JPanel createServerPanel() {
         JPanel panel = new JPanel(new BorderLayout(8, 0));
         homeButton.setPreferredSize(new Dimension(104, 34));
@@ -110,6 +120,7 @@ public class OwnerFrame extends JFrame {
         return panel;
     }
 
+    // 메뉴 관리 탭과 주문 내역 탭을 생성하는 메서드
     private JTabbedPane createTabbedPane() {
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.addTab("메뉴 관리", createMenuPanel());
@@ -117,6 +128,7 @@ public class OwnerFrame extends JFrame {
         return tabbedPane;
     }
 
+    // 메뉴 관리 탭의 패널을 생성하는 메서드
     private JPanel createMenuPanel() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
 
@@ -141,6 +153,7 @@ public class OwnerFrame extends JFrame {
         return panel;
     }
 
+    // 주문 내역 탭의 패널을 생성하는 메서드
     private JPanel createOrderPanel() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
 
@@ -172,6 +185,7 @@ public class OwnerFrame extends JFrame {
         return panel;
     }
 
+    // 메뉴 테이블 컬럼 너비와 렌더러를 설정하는 메서드
     private void configureMenuTableColumns() {
         DefaultTableCellRenderer rightRenderer = createCurrencyRenderer();
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
@@ -186,6 +200,7 @@ public class OwnerFrame extends JFrame {
         columns.getColumn(3).setPreferredWidth(420);
     }
 
+    // 주문 내역 테이블 컬럼 너비와 렌더러를 설정하는 메서드
     private void configureOrderTableColumns() {
         DefaultTableCellRenderer rightRenderer = createCurrencyRenderer();
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
@@ -200,6 +215,7 @@ public class OwnerFrame extends JFrame {
         columns.getColumn(3).setPreferredWidth(220);
     }
 
+    // 금액 컬럼을 원화 형식으로 표시하는 렌더러 생성 메서드
     private DefaultTableCellRenderer createCurrencyRenderer() {
         DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
             @Override
@@ -215,6 +231,7 @@ public class OwnerFrame extends JFrame {
         return renderer;
     }
 
+    // 버튼과 테이블 선택 이벤트를 연결하는 메서드
     private void bindActions() {
         homeButton.addActionListener(event -> returnToRoleSelection());
         reloadAllButton.addActionListener(event -> {
@@ -233,12 +250,14 @@ public class OwnerFrame extends JFrame {
         });
     }
 
+    // 처음 역할 선택 화면으로 돌아가는 메서드
     private void returnToRoleSelection() {
         RoleSelectionFrame roleSelectionFrame = new RoleSelectionFrame();
         roleSelectionFrame.setVisible(true);
         dispose();
     }
 
+    // 백엔드에서 메뉴 목록을 비동기로 불러오는 메서드
     private void loadMenusFromBackend() {
         setMenuLoadingState(true);
         CompletableFuture
@@ -246,6 +265,7 @@ public class OwnerFrame extends JFrame {
                 .whenComplete((menus, error) -> SwingUtilities.invokeLater(() -> handleMenuResult(menus, error)));
     }
 
+    // 메뉴 API 호출 결과를 반환하는 메서드
     private List<MenuItem> fetchMenus() {
         try {
             return menuApiClient.fetchMenus(apiUrlField.getText());
@@ -257,6 +277,7 @@ public class OwnerFrame extends JFrame {
         }
     }
 
+    // 메뉴 조회 결과를 화면에 반영하는 메서드
     private void handleMenuResult(List<MenuItem> menus, Throwable error) {
         setMenuLoadingState(false);
 
@@ -278,6 +299,7 @@ public class OwnerFrame extends JFrame {
         statusLabel.setText("메뉴 " + menus.size() + "개를 불러왔습니다.");
     }
 
+    // 메뉴 추가 다이얼로그를 열고 입력값을 서버에 저장하는 메서드
     private void addMenu() {
         Optional<MenuItem> menuItem = promptMenu(null);
         if (menuItem.isEmpty()) {
@@ -290,6 +312,7 @@ public class OwnerFrame extends JFrame {
                 .whenComplete((createdMenu, error) -> SwingUtilities.invokeLater(() -> handleMenuMutationResult(error)));
     }
 
+    // 메뉴 추가 API를 호출하는 메서드
     private MenuItem createMenu(MenuItem menuItem) {
         try {
             return menuApiClient.createMenu(apiUrlField.getText(), menuItem);
@@ -301,6 +324,7 @@ public class OwnerFrame extends JFrame {
         }
     }
 
+    // 선택한 메뉴를 수정하는 메서드
     private void editSelectedMenu() {
         Optional<MenuItem> selectedMenu = getSelectedMenu();
         if (selectedMenu.isEmpty()) {
@@ -319,6 +343,7 @@ public class OwnerFrame extends JFrame {
                 .whenComplete((updatedMenu, error) -> SwingUtilities.invokeLater(() -> handleMenuMutationResult(error)));
     }
 
+    // 메뉴 수정 API를 호출하는 메서드
     private MenuItem updateMenu(MenuItem menuItem) {
         try {
             return menuApiClient.updateMenu(apiUrlField.getText(), menuItem);
@@ -330,6 +355,7 @@ public class OwnerFrame extends JFrame {
         }
     }
 
+    // 선택한 메뉴를 삭제하는 메서드
     private void deleteSelectedMenu() {
         Optional<MenuItem> selectedMenu = getSelectedMenu();
         if (selectedMenu.isEmpty()) {
@@ -355,6 +381,7 @@ public class OwnerFrame extends JFrame {
                 .whenComplete((ignored, error) -> SwingUtilities.invokeLater(() -> handleMenuMutationResult(error)));
     }
 
+    // 메뉴 삭제 API를 호출하는 메서드
     private Void deleteMenu(MenuItem menuItem) {
         try {
             menuApiClient.deleteMenu(apiUrlField.getText(), menuItem.id());
@@ -367,6 +394,7 @@ public class OwnerFrame extends JFrame {
         }
     }
 
+    // 메뉴 추가, 수정, 삭제 결과를 화면에 반영하는 메서드
     private void handleMenuMutationResult(Throwable error) {
         setMenuLoadingState(false);
 
@@ -385,6 +413,7 @@ public class OwnerFrame extends JFrame {
         loadMenusFromBackend();
     }
 
+    // 메뉴 추가 또는 수정에 사용할 입력 다이얼로그를 띄우는 메서드
     private Optional<MenuItem> promptMenu(MenuItem existingMenu) {
         JTextField nameField = new JTextField(existingMenu == null ? "" : existingMenu.name(), 22);
         JTextField priceField = new JTextField(existingMenu == null ? "" : String.valueOf(existingMenu.price()), 22);
@@ -440,6 +469,7 @@ public class OwnerFrame extends JFrame {
         }
     }
 
+    // 메뉴 입력 다이얼로그의 한 줄을 추가하는 메서드
     private void addDialogRow(
             JPanel panel,
             GridBagConstraints constraints,
@@ -457,6 +487,7 @@ public class OwnerFrame extends JFrame {
         panel.add(field, constraints);
     }
 
+    // 메뉴 테이블에서 선택된 MenuItem 객체를 반환하는 메서드
     private Optional<MenuItem> getSelectedMenu() {
         int selectedRow = menuTable.getSelectedRow();
         if (selectedRow < 0) {
@@ -466,6 +497,7 @@ public class OwnerFrame extends JFrame {
         return Optional.of(menuTableModel.getMenuAt(modelRow));
     }
 
+    // 백엔드에서 주문 내역을 비동기로 불러오는 메서드
     private void loadOrdersFromBackend() {
         setOrderLoadingState(true);
         CompletableFuture
@@ -473,6 +505,7 @@ public class OwnerFrame extends JFrame {
                 .whenComplete((orders, error) -> SwingUtilities.invokeLater(() -> handleOrderResult(orders, error)));
     }
 
+    // 주문 내역 API 호출 결과를 반환하는 메서드
     private List<OrderHistoryItem> fetchOrders() {
         try {
             return orderApiClient.fetchOrders(apiUrlField.getText());
@@ -484,6 +517,7 @@ public class OwnerFrame extends JFrame {
         }
     }
 
+    // 주문 내역 조회 결과를 화면에 반영하는 메서드
     private void handleOrderResult(List<OrderHistoryItem> orders, Throwable error) {
         setOrderLoadingState(false);
 
@@ -507,6 +541,7 @@ public class OwnerFrame extends JFrame {
         statusLabel.setText("주문 " + orders.size() + "건을 불러왔습니다.");
     }
 
+    // 선택한 주문의 상세 정보를 화면에 표시하는 메서드
     private void showSelectedOrderDetails() {
         int selectedRow = orderTable.getSelectedRow();
         if (selectedRow < 0) {
@@ -520,6 +555,7 @@ public class OwnerFrame extends JFrame {
         orderDetailArea.setCaretPosition(0);
     }
 
+    // 주문 상세 영역에 표시할 문자열을 생성하는 메서드
     private String formatOrderDetails(OrderHistoryItem order) {
         JsonNode orderJson = readOrderJson(order.orderJson());
         return """
@@ -543,6 +579,7 @@ public class OwnerFrame extends JFrame {
         );
     }
 
+    // 서버에서 받은 접수시각 문자열을 화면 표시용으로 변환하는 메서드
     private String formatCreatedAt(String createdAt) {
         if (createdAt == null || createdAt.isBlank()) {
             return "";
@@ -555,6 +592,7 @@ public class OwnerFrame extends JFrame {
         }
     }
 
+    // 주문 원본 JSON 문자열을 JsonNode로 변환하는 메서드
     private JsonNode readOrderJson(String orderJson) {
         if (orderJson == null || orderJson.isBlank()) {
             return null;
@@ -567,6 +605,7 @@ public class OwnerFrame extends JFrame {
         }
     }
 
+    // JsonNode에서 특정 필드 값을 읽고 없으면 기본값을 반환하는 메서드
     private String getText(JsonNode node, String fieldName, String fallback) {
         if (node == null) {
             return fallback;
@@ -576,6 +615,7 @@ public class OwnerFrame extends JFrame {
         return value.isBlank() ? fallback : value;
     }
 
+    // 주문 원본 JSON에서 주문 메뉴 목록을 문자열로 만들어 반환하는 메서드
     private String formatOrderItems(JsonNode orderJson) {
         if (orderJson == null || !orderJson.path("items").isArray() || orderJson.path("items").isEmpty()) {
             return "주문 메뉴 정보가 없습니다.";
@@ -594,6 +634,7 @@ public class OwnerFrame extends JFrame {
         return summary.toString();
     }
 
+    // 메뉴 데이터 처리 중 버튼 활성화 상태를 변경하는 메서드
     private void setMenuLoadingState(boolean loading) {
         reloadMenuButton.setEnabled(!loading);
         addMenuButton.setEnabled(!loading);
@@ -605,6 +646,7 @@ public class OwnerFrame extends JFrame {
         }
     }
 
+    // 주문 내역 조회 중 버튼 활성화 상태를 변경하는 메서드
     private void setOrderLoadingState(boolean loading) {
         reloadOrdersButton.setEnabled(!loading);
         orderTable.setEnabled(!loading);
@@ -613,6 +655,7 @@ public class OwnerFrame extends JFrame {
         }
     }
 
+    // CompletableFuture에서 감싸진 예외의 원인을 꺼내는 메서드
     private Throwable unwrapCompletionException(Throwable error) {
         if (error instanceof CompletionException && error.getCause() != null) {
             return error.getCause();
@@ -620,16 +663,21 @@ public class OwnerFrame extends JFrame {
         return error;
     }
 
+    // 메시지 다이얼로그를 보여주는 메서드
     private void showMessage(String message, String title, int messageType) {
         JOptionPane.showMessageDialog(this, message, title, messageType);
     }
 
+    // 메뉴가 없을 때 빈 화면 문구를 그리기 위한 JTable 클래스
     private static class EmptyMessageTable extends JTable {
 
+        // 생성자
+        // 메뉴 테이블 모델을 부모 JTable에 전달함
         EmptyMessageTable(MenuTableModel model) {
             super(model);
         }
 
+        // 테이블이 비어있으면 메뉴가 없어요 문구를 그리는 메서드
         @Override
         protected void paintComponent(Graphics graphics) {
             super.paintComponent(graphics);

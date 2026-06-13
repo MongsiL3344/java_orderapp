@@ -44,25 +44,33 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
+// 손님이 메뉴를 장바구니에 담고 주문할 수 있는 주문창 클래스
 public class OrderFrame extends JFrame {
 
+    // 기본 API 서버 주소
     private static final String DEFAULT_API_URL = "http://localhost:8080";
 
+    // 금액 표시와 API 통신에 필요한 객체
     private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(Locale.KOREA);
     private final MenuApiClient menuApiClient = new MenuApiClient();
     private final OrderApiClient orderApiClient = new OrderApiClient();
+    // 장바구니 목록을 저장하는 List 자료구조
     private final List<CartItem> cartItems = new ArrayList<>();
 
+    // 메뉴 목록과 장바구니 테이블에 필요한 화면 객체
     private final DefaultListModel<MenuItem> menuListModel = new DefaultListModel<>();
     private final JList<MenuItem> menuList = new EmptyMessageMenuList(menuListModel);
     private final CartTableModel cartTableModel = new CartTableModel(cartItems);
     private final JTable cartTable = new JTable(cartTableModel);
+    // 주문자 정보와 서버 URL을 입력받는 필드
     private final JTextField customerNameField = new JTextField();
     private final JTextField phoneNumberField = new JTextField();
     private final JTextField addressField = new JTextField();
     private final JTextField apiUrlField = new JTextField(DEFAULT_API_URL);
+    // 화면 상태를 보여주는 라벨
     private final JLabel totalPriceLabel = new JLabel("총 결제 금액: 0원");
     private final JLabel statusLabel = new JLabel("백엔드를 실행한 뒤 주문을 전송하세요.");
+    // 화면에서 사용하는 버튼 객체들
     private final JButton homeButton = new JButton("처음으로");
     private final JButton addButton = new JButton("담기");
     private final JButton reloadMenuButton = new JButton("새로고침");
@@ -72,6 +80,8 @@ public class OrderFrame extends JFrame {
     private final JButton clearButton = new JButton("비우기");
     private final JButton orderButton = new JButton("주문하기");
 
+    // 생성자
+    // 주문창 화면에 필요한 컴포넌트를 생성하고 초기 메뉴 목록을 불러옴
     public OrderFrame() {
         setTitle("배달 주문 프로그램");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -92,6 +102,7 @@ public class OrderFrame extends JFrame {
         loadMenusFromBackend();
     }
 
+    // 화면 상단 패널을 생성하는 메서드
     private JPanel createTopPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         homeButton.setPreferredSize(new Dimension(104, 34));
@@ -99,6 +110,7 @@ public class OrderFrame extends JFrame {
         return panel;
     }
 
+    // 메뉴 목록 패널을 생성하는 메서드
     private JPanel createMenuPanel() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.setPreferredSize(new Dimension(300, 520));
@@ -122,6 +134,7 @@ public class OrderFrame extends JFrame {
         return panel;
     }
 
+    // 주문자 정보, 장바구니, 주문 버튼을 포함한 주문 패널 생성 메서드
     private JPanel createOrderPanel() {
         JPanel panel = new JPanel(new BorderLayout(12, 12));
         panel.add(createCustomerPanel(), BorderLayout.NORTH);
@@ -130,6 +143,7 @@ public class OrderFrame extends JFrame {
         return panel;
     }
 
+    // 주문자 정보 입력 패널을 생성하는 메서드
     private JPanel createCustomerPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder("주문자 정보"));
@@ -146,6 +160,7 @@ public class OrderFrame extends JFrame {
         return panel;
     }
 
+    // 입력 폼의 한 줄을 추가하는 메서드
     private void addFormRow(JPanel panel, GridBagConstraints constraints, int row, String label, JTextField field) {
         constraints.gridx = 0;
         constraints.gridy = row;
@@ -157,6 +172,7 @@ public class OrderFrame extends JFrame {
         panel.add(field, constraints);
     }
 
+    // 장바구니 테이블과 수량 조절 버튼을 포함한 패널 생성 메서드
     private JPanel createCartPanel() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.setBorder(BorderFactory.createTitledBorder("장바구니"));
@@ -186,6 +202,7 @@ public class OrderFrame extends JFrame {
         return panel;
     }
 
+    // 주문하기 버튼 패널을 생성하는 메서드
     private JPanel createOrderButtonPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         orderButton.setPreferredSize(new Dimension(128, 40));
@@ -193,6 +210,7 @@ public class OrderFrame extends JFrame {
         return panel;
     }
 
+    // 장바구니 테이블 컬럼 너비와 렌더러를 설정하는 메서드
     private void configureCartTableColumns() {
         DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer() {
             @Override
@@ -219,6 +237,7 @@ public class OrderFrame extends JFrame {
         columns.getColumn(3).setCellRenderer(rightRenderer);
     }
 
+    // 버튼 이벤트를 연결하는 메서드
     private void bindActions() {
         homeButton.addActionListener(event -> returnToRoleSelection());
         addButton.addActionListener(event -> addSelectedMenuToCart());
@@ -230,12 +249,14 @@ public class OrderFrame extends JFrame {
         orderButton.addActionListener(event -> submitOrder());
     }
 
+    // 처음 역할 선택 화면으로 돌아가는 메서드
     private void returnToRoleSelection() {
         RoleSelectionFrame roleSelectionFrame = new RoleSelectionFrame();
         roleSelectionFrame.setVisible(true);
         dispose();
     }
 
+    // 선택한 메뉴를 장바구니에 추가하는 메서드
     private void addSelectedMenuToCart() {
         MenuItem selectedMenu = menuList.getSelectedValue();
         if (selectedMenu == null) {
@@ -265,6 +286,7 @@ public class OrderFrame extends JFrame {
         statusLabel.setText(selectedMenu.name() + " 메뉴를 장바구니에 담았습니다.");
     }
 
+    // 선택한 장바구니 메뉴의 수량을 변경하는 메서드
     private void changeSelectedCartQuantity(int delta) {
         int selectedRow = cartTable.getSelectedRow();
         if (selectedRow < 0) {
@@ -285,6 +307,7 @@ public class OrderFrame extends JFrame {
         refreshCart();
     }
 
+    // 선택한 장바구니 메뉴를 삭제하는 메서드
     private void removeSelectedCartItem() {
         int selectedRow = cartTable.getSelectedRow();
         if (selectedRow < 0) {
@@ -296,6 +319,7 @@ public class OrderFrame extends JFrame {
         refreshCart();
     }
 
+    // 장바구니를 비우는 메서드
     private void clearCart() {
         if (cartItems.isEmpty()) {
             return;
@@ -306,6 +330,7 @@ public class OrderFrame extends JFrame {
         statusLabel.setText("장바구니를 비웠습니다.");
     }
 
+    // 주문자 정보와 장바구니를 검증하고 주문 요청 객체를 생성하는 메서드
     private void submitOrder() {
         String customerName = customerNameField.getText().trim();
         String phoneNumber = phoneNumberField.getText().trim();
@@ -335,6 +360,7 @@ public class OrderFrame extends JFrame {
                 .whenComplete((response, error) -> SwingUtilities.invokeLater(() -> handleOrderResult(response, error)));
     }
 
+    // 백그라운드 스레드에서 주문 API를 호출하는 메서드
     private OrderApiResponse sendOrder(OrderRequest orderRequest) {
         try {
             return orderApiClient.postOrder(apiUrlField.getText(), orderRequest);
@@ -346,6 +372,7 @@ public class OrderFrame extends JFrame {
         }
     }
 
+    // 백엔드에서 메뉴 목록을 비동기로 불러오는 메서드
     private void loadMenusFromBackend() {
         setMenuLoadingState(true);
         CompletableFuture
@@ -353,6 +380,7 @@ public class OrderFrame extends JFrame {
                 .whenComplete((menus, error) -> SwingUtilities.invokeLater(() -> handleMenuResult(menus, error)));
     }
 
+    // 메뉴 API 호출 결과를 반환하는 메서드
     private List<MenuItem> fetchMenus() {
         try {
             return menuApiClient.fetchMenus(apiUrlField.getText());
@@ -364,6 +392,7 @@ public class OrderFrame extends JFrame {
         }
     }
 
+    // 메뉴 조회 결과를 화면에 반영하는 메서드
     private void handleMenuResult(List<MenuItem> menus, Throwable error) {
         setMenuLoadingState(false);
 
@@ -389,6 +418,7 @@ public class OrderFrame extends JFrame {
         statusLabel.setText("DB에서 메뉴 " + menus.size() + "개를 불러왔습니다.");
     }
 
+    // 주문 전송 결과를 화면에 반영하는 메서드
     private void handleOrderResult(OrderApiResponse response, Throwable error) {
         setOrderingState(false);
 
@@ -427,6 +457,7 @@ public class OrderFrame extends JFrame {
         );
     }
 
+    // 주문 전송 중 버튼 활성화 상태를 변경하는 메서드
     private void setOrderingState(boolean ordering) {
         orderButton.setEnabled(!ordering);
         addButton.setEnabled(!ordering);
@@ -437,6 +468,7 @@ public class OrderFrame extends JFrame {
         statusLabel.setText(ordering ? "주문서를 백엔드로 전송 중입니다..." : statusLabel.getText());
     }
 
+    // 메뉴 조회 중 화면 상태를 변경하는 메서드
     private void setMenuLoadingState(boolean loading) {
         addButton.setEnabled(!loading);
         reloadMenuButton.setEnabled(!loading);
@@ -444,6 +476,7 @@ public class OrderFrame extends JFrame {
         statusLabel.setText(loading ? "DB에서 메뉴를 불러오는 중입니다..." : statusLabel.getText());
     }
 
+    // CompletableFuture에서 감싸진 예외의 원인을 꺼내는 메서드
     private Throwable unwrapCompletionException(Throwable error) {
         if (error instanceof CompletionException && error.getCause() != null) {
             return error.getCause();
@@ -451,27 +484,32 @@ public class OrderFrame extends JFrame {
         return error;
     }
 
+    // 장바구니 목록을 주문 메뉴 DTO 목록으로 변환하는 메서드
     private List<OrderItem> toOrderItems() {
         return cartItems.stream()
                 .map(item -> new OrderItem(item.menuItem().name(), item.menuItem().price(), item.quantity()))
                 .toList();
     }
 
+    // 장바구니 테이블과 총 금액을 갱신하는 메서드
     private void refreshCart() {
         cartTableModel.refresh();
         updateTotalPrice();
     }
 
+    // 총 결제 금액 라벨을 갱신하는 메서드
     private void updateTotalPrice() {
         totalPriceLabel.setText("총 결제 금액: " + currencyFormat.format(calculateTotalPrice()));
     }
 
+    // 장바구니 전체 금액을 계산해서 반환하는 메서드
     private int calculateTotalPrice() {
         return cartItems.stream()
                 .mapToInt(CartItem::lineTotal)
                 .sum();
     }
 
+    // 주문 완료 메시지에 표시할 주문 요약 문자열을 생성하는 메서드
     private String formatOrderSummary() {
         StringBuilder summary = new StringBuilder();
         for (CartItem item : cartItems) {
@@ -486,12 +524,15 @@ public class OrderFrame extends JFrame {
         return summary.toString();
     }
 
+    // 메시지 다이얼로그를 보여주는 메서드
     private void showMessage(String message, String title, int messageType) {
         JOptionPane.showMessageDialog(this, message, title, messageType);
     }
 
+    // 메뉴 목록의 셀을 화면에 표시할 형식으로 꾸미는 렌더러 클래스
     private class MenuCellRenderer extends DefaultListCellRenderer {
 
+        // 메뉴 이름, 가격, 설명을 HTML 문자열로 만들어 화면에 표시함
         @Override
         public Component getListCellRendererComponent(
                 JList<?> list,
@@ -513,6 +554,7 @@ public class OrderFrame extends JFrame {
             return label;
         }
 
+        // HTML에서 문제가 될 수 있는 문자를 치환하는 메서드
         private String escapeHtml(String text) {
             return text.replace("&", "&amp;")
                     .replace("<", "&lt;")
@@ -520,12 +562,16 @@ public class OrderFrame extends JFrame {
         }
     }
 
+    // 메뉴가 없을 때 빈 화면 문구를 그리기 위한 JList 클래스
     private static class EmptyMessageMenuList extends JList<MenuItem> {
 
+        // 생성자
+        // 메뉴 목록 모델을 부모 JList에 전달함
         EmptyMessageMenuList(DefaultListModel<MenuItem> model) {
             super(model);
         }
 
+        // 목록이 비어있으면 메뉴가 없어요 문구를 그리는 메서드
         @Override
         protected void paintComponent(Graphics graphics) {
             super.paintComponent(graphics);

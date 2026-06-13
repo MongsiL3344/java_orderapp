@@ -12,12 +12,15 @@ import java.util.List;
 @Repository
 public class OrderRepository {
 
+    // JdbcTemplate 의존성 주입
     private final JdbcTemplate jdbcTemplate;
 
+    // 생성자, 객체주입
     public OrderRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    // 주문객체 생성하는 save메서드
     public Order save(Order order) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
@@ -46,6 +49,7 @@ public class OrderRepository {
         );
     }
 
+    // Order형 list 반환하는 전체조회 메서드
     public List<Order> findAllByOrderByIdDesc() {
         return jdbcTemplate.query(
                 """

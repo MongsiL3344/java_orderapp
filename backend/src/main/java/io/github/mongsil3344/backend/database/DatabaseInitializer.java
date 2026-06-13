@@ -7,9 +7,12 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+// 데이터베이스 초기화 설정코드
 @Configuration
 public class DatabaseInitializer {
 
+    // 아래 두개의 sql문이 서버가 실행될때 실행되며 데이터베이스를 초기화
+    // if not exists가 붙어있기때문에 해당 테이블이 존재하면 실행되지 않음
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     ApplicationRunner initializeDatabase(JdbcTemplate jdbcTemplate) {

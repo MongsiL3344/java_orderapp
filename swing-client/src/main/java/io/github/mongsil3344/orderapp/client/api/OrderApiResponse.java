@@ -1,11 +1,6 @@
 package io.github.mongsil3344.orderapp.client.api;
 
-/**
- * 주문결과 DTO
- * @param statusCode
- * @param responseBody
- * @param requestBody
- */
+// 주문 API 호출 결과를 담는 DTO
 public record OrderApiResponse(
         int statusCode,
         String responseBody,
