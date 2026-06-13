@@ -103,6 +103,19 @@ GET    /api/orders         # 주문 목록 조회
 }
 ```
 
+## 오픈소스 사용 고지
+
+이 프로젝트에서 직접 사용한 주요 오픈소스 라이브러리는 다음과 같습니다.
+
+| 이름 | 버전 | 사용 위치 | 용도 | 라이선스 |
+|---|---:|---|---|---|
+| Spring Boot | 4.1.0 | backend | REST API, JDBC, JSON 처리, 서버 실행 | Apache License 2.0 |
+| H2 Database | 2.4.240 | backend | 개발용 파일 기반 데이터베이스 | MPL 2.0 또는 EPL 1.0 |
+| Jackson Databind | 2.21.2 | swing-client | 서버와 주고받는 JSON 직렬화/역직렬화 | Apache License 2.0 |
+| JUnit Platform | 6.0.3 | backend test | 백엔드 테스트 실행 | Eclipse Public License 2.0 |
+
+Java 표준 라이브러리, Gradle 빌드 도구, Spring Boot가 내부적으로 가져오는 전이 의존성은 별도 표기에서 제외했습니다.
+
 ## H2 콘솔
 
 백엔드 실행 후 아래 주소에서 H2 콘솔을 확인할 수 있습니다.
