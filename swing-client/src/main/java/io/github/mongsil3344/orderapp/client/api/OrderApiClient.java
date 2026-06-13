@@ -1,6 +1,8 @@
 package io.github.mongsil3344.orderapp.client.api;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.mongsil3344.orderapp.client.model.OrderHistoryItem;
 import io.github.mongsil3344.orderapp.client.model.OrderRequest;
 
 import java.io.IOException;
@@ -9,6 +11,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
 
 public class OrderApiClient {
 
@@ -40,5 +43,25 @@ public class OrderApiClient {
         );
 
         return new OrderApiResponse(response.statusCode(), response.body(), requestBody);
+    }
+
+    public List<OrderHistoryItem> fetchOrders(String baseUrl) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(ApiUriBuilder.toUri(baseUrl, ORDERS_PATH))
+                .timeout(Duration.ofSeconds(5))
+                .header("Accept", "application/json")
+                .GET()
+                .build();
+
+        HttpResponse<String> response = httpClient.send(
+                request,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+        );
+
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IOException("주문 조회 실패: HTTP " + response.statusCode());
+        }
+
+        return objectMapper.readValue(response.body(), new TypeReference<>() {
+        });
     }
 }

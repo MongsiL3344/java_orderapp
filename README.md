@@ -2,6 +2,11 @@
 
 Java Swing 클라이언트와 Spring Boot 백엔드로 구성한 배달 주문 프로그램입니다.
 
+앱을 실행하면 첫 화면에서 사용자 역할을 선택합니다.
+
+- `손님이에요`: 메뉴를 보고 장바구니에 담아 주문하는 주문창으로 이동합니다.
+- `사장님이에요`: 메뉴를 관리하고 들어온 주문을 확인하는 매장관리창으로 이동합니다.
+
 ## 프로젝트 구조
 
 ```text
@@ -10,6 +15,29 @@ orderapp/
 ├── swing-client/  # Java Swing GUI 클라이언트
 └── settings.gradle
 ```
+
+## 주요 기능
+
+### 손님 주문창
+
+- `GET /api/menus`로 메뉴 목록을 불러옵니다.
+- 메뉴를 장바구니에 담고 수량을 변경할 수 있습니다.
+- 이름, 전화번호, 주소를 입력한 뒤 주문할 수 있습니다.
+- 주문하기 버튼을 누르면 주문서 JSON을 `POST /api/orders`로 전송합니다.
+
+### 사장님 매장관리창
+
+- `메뉴 관리` 탭에서 메뉴 목록을 확인합니다.
+- 메뉴를 추가, 수정, 삭제할 수 있습니다.
+- `주문 내역` 탭에서 들어온 주문 목록을 확인합니다.
+- 주문을 선택하면 주문자 정보, 총액, 접수 시각, 주문 상세 JSON을 확인할 수 있습니다.
+
+### 백엔드
+
+- H2 데이터베이스를 JDBC로 관리합니다.
+- 서버 시작 시 DB가 비어 있으면 `backend/src/main/resources/data/menus.json`의 기본 메뉴를 저장합니다.
+- 메뉴 CRUD API와 주문 생성/조회 API를 제공합니다.
+- 주문 원본 JSON을 DB에 저장해 사장님 화면에서 상세 내용을 확인할 수 있게 합니다.
 
 ## 실행 순서
 
@@ -23,24 +51,56 @@ cd backend
 다른 터미널에서 Swing 클라이언트를 실행합니다.
 
 ```bash
-cd /Users/wkdgustjr/Dev/orderapp
-./backend/gradlew -p . :swing-client:run
+cd swing-client
+./gradlew run
 ```
 
-## 주요 기능
-
-- 백엔드가 H2 데이터베이스를 JDBC로 관리합니다.
-- 서버 시작 시 `backend/src/main/resources/data/menus.json`의 메뉴 데이터를 DB에 저장합니다.
-- Swing 화면은 `GET /api/menus`로 메뉴 목록을 불러옵니다.
-- 주문하기 버튼을 누르면 주문서 JSON을 `POST /api/orders`로 전송합니다.
-- 백엔드는 주문 JSON을 DB에 저장합니다.
+기본 서버 URL은 `http://localhost:8080`입니다. 손님 주문창과 사장님 매장관리창 모두 화면에서 서버 URL을 수정할 수 있습니다.
 
 ## API
 
 ```text
-GET  /api/menus
-POST /api/orders
-GET  /api/orders
+GET    /api/menus          # 메뉴 목록 조회
+POST   /api/menus          # 메뉴 추가
+PUT    /api/menus/{id}     # 메뉴 수정
+DELETE /api/menus/{id}     # 메뉴 삭제
+
+POST   /api/orders         # 주문 생성
+GET    /api/orders         # 주문 목록 조회
+```
+
+메뉴 추가/수정 요청 본문 예시는 다음과 같습니다.
+
+```json
+{
+  "name": "후라이드 치킨",
+  "price": 18000,
+  "description": "바삭한 기본 치킨"
+}
+```
+
+주문 생성 요청 본문 예시는 다음과 같습니다.
+
+```json
+{
+  "customerName": "홍길동",
+  "phoneNumber": "010-0000-0000",
+  "address": "서울시",
+  "orderedAt": "2026-06-13T12:00:00Z",
+  "totalPrice": 20000,
+  "items": [
+    {
+      "menuName": "후라이드 치킨",
+      "price": 18000,
+      "quantity": 1
+    },
+    {
+      "menuName": "콜라",
+      "price": 2000,
+      "quantity": 1
+    }
+  ]
+}
 ```
 
 ## H2 콘솔
@@ -67,10 +127,18 @@ Password:
 backend/src/main/resources/data/menus.json
 ```
 
-이미 DB에 메뉴가 들어간 상태에서는 JSON을 수정해도 자동으로 덮어쓰지 않습니다. 개발 중 메뉴 데이터를 다시 반영하려면 백엔드를 종료한 뒤 `backend/data` 폴더를 삭제하고 다시 실행하면 됩니다.
+이미 DB에 메뉴가 들어간 상태에서는 JSON을 수정해도 자동으로 덮어쓰지 않습니다. 실행 중인 앱에서는 사장님 매장관리창의 `메뉴 관리` 탭이나 메뉴 CRUD API로 DB의 메뉴를 수정할 수 있습니다.
+
+개발 중 기본 JSON 데이터를 다시 반영하려면 백엔드를 종료한 뒤 `backend/data` 폴더를 삭제하고 다시 실행하면 됩니다.
 
 ## 검증
 
 ```bash
-./backend/gradlew -p . :backend:test :swing-client:compileJava
+cd backend
+./gradlew test
+```
+
+```bash
+cd swing-client
+./gradlew build
 ```

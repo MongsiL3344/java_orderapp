@@ -1,6 +1,6 @@
 package io.github.mongsil3344.orderapp.client;
 
-import io.github.mongsil3344.orderapp.client.ui.OrderFrame;
+import io.github.mongsil3344.orderapp.client.ui.RoleSelectionFrame;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -14,7 +14,7 @@ public class OrderAppClientApplication {
             } catch (Exception ignored) {
             }
 
-            OrderFrame frame = new OrderFrame();
+            RoleSelectionFrame frame = new RoleSelectionFrame();
             frame.setVisible(true);
         });
     }

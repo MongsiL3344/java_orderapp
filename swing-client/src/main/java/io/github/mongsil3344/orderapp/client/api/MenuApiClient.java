@@ -45,4 +45,72 @@ public class MenuApiClient {
         return objectMapper.readValue(response.body(), new TypeReference<>() {
         });
     }
+
+    public MenuItem createMenu(String baseUrl, MenuItem menuItem) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(ApiUriBuilder.toUri(baseUrl, MENUS_PATH))
+                .timeout(Duration.ofSeconds(5))
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .header("Accept", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(toRequestBody(menuItem), StandardCharsets.UTF_8))
+                .build();
+
+        HttpResponse<String> response = send(request);
+        return objectMapper.readValue(response.body(), MenuItem.class);
+    }
+
+    public MenuItem updateMenu(String baseUrl, MenuItem menuItem) throws IOException, InterruptedException {
+        if (menuItem.id() == null) {
+            throw new IOException("수정할 메뉴 ID가 없습니다.");
+        }
+
+        HttpRequest request = HttpRequest.newBuilder(ApiUriBuilder.toUri(baseUrl, MENUS_PATH + "/" + menuItem.id()))
+                .timeout(Duration.ofSeconds(5))
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .header("Accept", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(toRequestBody(menuItem), StandardCharsets.UTF_8))
+                .build();
+
+        HttpResponse<String> response = send(request);
+        return objectMapper.readValue(response.body(), MenuItem.class);
+    }
+
+    public void deleteMenu(String baseUrl, Long id) throws IOException, InterruptedException {
+        if (id == null) {
+            throw new IOException("삭제할 메뉴 ID가 없습니다.");
+        }
+
+        HttpRequest request = HttpRequest.newBuilder(ApiUriBuilder.toUri(baseUrl, MENUS_PATH + "/" + id))
+                .timeout(Duration.ofSeconds(5))
+                .DELETE()
+                .build();
+
+        send(request);
+    }
+
+    private HttpResponse<String> send(HttpRequest request) throws IOException, InterruptedException {
+        HttpResponse<String> response = httpClient.send(
+                request,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+        );
+
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IOException("메뉴 요청 실패: HTTP " + response.statusCode() + "\n" + response.body());
+        }
+        return response;
+    }
+
+    private String toRequestBody(MenuItem menuItem) throws IOException {
+        return objectMapper.writeValueAsString(new MenuPayload(
+                menuItem.name(),
+                menuItem.price(),
+                menuItem.description()
+        ));
+    }
+
+    private record MenuPayload(
+            String name,
+            int price,
+            String description
+    ) {
+    }
 }
