@@ -30,6 +30,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -53,7 +54,7 @@ public class OrderFrame extends JFrame {
     private final List<CartItem> cartItems = new ArrayList<>();
 
     private final DefaultListModel<MenuItem> menuListModel = new DefaultListModel<>();
-    private final JList<MenuItem> menuList = new JList<>(menuListModel);
+    private final JList<MenuItem> menuList = new EmptyMessageMenuList(menuListModel);
     private final CartTableModel cartTableModel = new CartTableModel(cartItems);
     private final JTable cartTable = new JTable(cartTableModel);
     private final JTextField customerNameField = new JTextField();
@@ -238,7 +239,15 @@ public class OrderFrame extends JFrame {
     private void addSelectedMenuToCart() {
         MenuItem selectedMenu = menuList.getSelectedValue();
         if (selectedMenu == null) {
-            showMessage("백엔드에서 메뉴를 불러온 뒤 선택해주세요.", "메뉴 선택 필요", JOptionPane.WARNING_MESSAGE);
+            if (menuListModel.getSize() == 0) {
+                showMessage(
+                        "등록된 메뉴가 없습니다.\n사장님 화면에서 메뉴를 먼저 등록해주세요.",
+                        "메뉴 없음",
+                        JOptionPane.WARNING_MESSAGE
+                );
+                return;
+            }
+            showMessage("메뉴를 선택해주세요.", "메뉴 선택 필요", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -508,6 +517,21 @@ public class OrderFrame extends JFrame {
             return text.replace("&", "&amp;")
                     .replace("<", "&lt;")
                     .replace(">", "&gt;");
+        }
+    }
+
+    private static class EmptyMessageMenuList extends JList<MenuItem> {
+
+        EmptyMessageMenuList(DefaultListModel<MenuItem> model) {
+            super(model);
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            super.paintComponent(graphics);
+            if (getModel().getSize() == 0) {
+                EmptyStatePainter.paintCenteredMessage(graphics, this, "메뉴가 없어요");
+            }
         }
     }
 }

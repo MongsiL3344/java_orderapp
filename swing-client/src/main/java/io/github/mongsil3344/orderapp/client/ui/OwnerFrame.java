@@ -29,6 +29,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -61,7 +62,7 @@ public class OwnerFrame extends JFrame {
     private final JButton homeButton = new JButton("처음으로");
 
     private final MenuTableModel menuTableModel = new MenuTableModel();
-    private final JTable menuTable = new JTable(menuTableModel);
+    private final JTable menuTable = new EmptyMessageTable(menuTableModel);
     private final JButton reloadMenuButton = new JButton("새로고침");
     private final JButton addMenuButton = new JButton("추가");
     private final JButton editMenuButton = new JButton("수정");
@@ -621,5 +622,20 @@ public class OwnerFrame extends JFrame {
 
     private void showMessage(String message, String title, int messageType) {
         JOptionPane.showMessageDialog(this, message, title, messageType);
+    }
+
+    private static class EmptyMessageTable extends JTable {
+
+        EmptyMessageTable(MenuTableModel model) {
+            super(model);
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            super.paintComponent(graphics);
+            if (getModel().getRowCount() == 0) {
+                EmptyStatePainter.paintCenteredMessage(graphics, this, "메뉴가 없어요");
+            }
+        }
     }
 }
