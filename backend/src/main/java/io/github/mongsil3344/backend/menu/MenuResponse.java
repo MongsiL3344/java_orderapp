@@ -1,0 +1,16 @@
+package io.github.mongsil3344.backend.menu;
+
+public record MenuResponse(
+        String name,
+        int price,
+        String description
+) {
+
+    public static MenuResponse from(Menu menu) {
+        return new MenuResponse(
+                menu.getName(),
+                menu.getPrice(),
+                menu.getDescription()
+        );
+    }
+}
